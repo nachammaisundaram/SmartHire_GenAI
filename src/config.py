@@ -13,8 +13,8 @@ VECTORSTORE_DIR = ROOT / "vectorstore"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 LLM_MODEL = "gemini-3.5-flash-lite"
-EMBED_MODEL = "gemini-embedding-001"
+EMBED_MODEL = "models/gemini-embedding-001"
 
-CHUNK_SIZE = 1000
+CHUNK_SIZE = 500
 CHUNK_OVERLAP = 150
 MAX_RETRIES = 2
