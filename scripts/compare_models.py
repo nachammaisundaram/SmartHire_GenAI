@@ -1,7 +1,7 @@
 import os
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
-from app.job_search import load_jobs, load_index
+from src.search.job_search import load_jobs, load_index
 
 MINI_DIR = "data/faiss_jobs_minilm"
 mini = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")

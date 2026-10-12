@@ -3,9 +3,9 @@ import time
 
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 
-from app import adapters
-from app.cv_advisor import read_resume_text, suggest_improvements
-from app.guardrails import check_input
+from src import adapters
+from src.generate.cv_suggestions import read_resume_text, suggest_improvements
+from src.safety.guardrails import check_input
 
 
 class Blocked(Exception):

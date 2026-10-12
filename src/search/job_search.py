@@ -3,15 +3,11 @@ import time
 import pandas as pd
 from langchain_core.documents import Document
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from dotenv import load_dotenv
 
-load_dotenv()
+from src.config import DATA_DIR, EMBED_MODEL
+from src.search.embed import embeddings
 
-EMBED_MODEL = "models/gemini-embedding-001"
-INDEX_DIR = "data/faiss_jobs_gemini"
-
-embeddings = GoogleGenerativeAIEmbeddings(model=EMBED_MODEL)
+INDEX_DIR = str(DATA_DIR / "faiss_jobs_gemini")
 
 
 def load_jobs(csv_path):

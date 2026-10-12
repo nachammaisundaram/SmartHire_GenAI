@@ -6,10 +6,10 @@ import time
 
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 
-from app import adapters
-from app.cv_advisor import find_job_text, read_resume_text, rewrite_resume, suggest_improvements
-from app.llm_util import get_llm, safe_invoke
-from app.prompts import PROMPTS
+from src import adapters
+from src.generate.cv_suggestions import find_job_text, read_resume_text, rewrite_resume, suggest_improvements
+from src.llm_util import get_llm, safe_invoke
+from src.generate.prompts import PROMPTS
 
 PAUSE = 4
 OUT_DIR = "eval_results"

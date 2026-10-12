@@ -1,4 +1,4 @@
-from app import adapters as a
+from src import adapters as a
 
 for q in ["What should a fresher learn first for Gen AI?", "Should I do a Ph.D. after MCA?"]:
     print("\nQ:", q)

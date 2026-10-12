@@ -1,4 +1,4 @@
-from app import adapters as a
+from src import adapters as a
 
 RESUME = "data/resumes/My_Resume.pdf"
 

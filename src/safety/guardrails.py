@@ -76,8 +76,8 @@ def check_input(text: str, use_llm: bool = True) -> GuardResult:
 
 def is_career_related(question: str) -> bool:
     from langchain_core.output_parsers import StrOutputParser
-    from app.llm_util import get_llm, safe_invoke
-    from app.prompts import PROMPTS
+    from src.llm_util import get_llm, safe_invoke
+    from src.generate.prompts import PROMPTS
 
     chain = PROMPTS["scope_check_v1"] | get_llm() | StrOutputParser()
     return safe_invoke(chain, {"question": question}).strip().upper().startswith("YES")

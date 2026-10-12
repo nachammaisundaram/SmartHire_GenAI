@@ -4,9 +4,9 @@ import sys
 from langchain_community.document_loaders import Docx2txtLoader, PyPDFLoader
 from langchain_core.output_parsers import StrOutputParser
 
-from app.guardrails import check_output, check_rewrite_faithfulness, load_skill_vocab
-from app.llm_util import get_llm, safe_invoke
-from app.prompts import PROMPTS
+from src.safety.guardrails import check_output, check_rewrite_faithfulness, load_skill_vocab
+from src.llm_util import get_llm, safe_invoke
+from src.generate.prompts import PROMPTS
 
 
 # ------------------------------------------------------------------ helpers

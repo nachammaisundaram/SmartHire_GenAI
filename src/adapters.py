@@ -7,8 +7,8 @@ Your real functions (from grep):
   app/job_search.py            : search_jobs(query, k=5), jobs_for_resume(resume_path, k=5)
   app/career_mentor.py         : get_db(), retrieve(db, query, k), ask(db, question, history)
 """
-from app import career_mentor as cm
-from app import job_search as js
+from src.mentor import rag_chain as cm
+from src.search import job_search as js
 from src.parsing.resume_parser import parse_resume
 
 
