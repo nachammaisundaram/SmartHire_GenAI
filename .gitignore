@@ -7,3 +7,15 @@ data/jobs/*.csv
 data/resumes/*
 *.faiss
 *.pkl
+.streamlit/secrets.toml
+.venv/
+*.log
+
+data/faiss_jobs_minilm/
+!data/jobs.csv
+!data/faiss_jobs_gemini/index.faiss
+!data/faiss_career_kb/index.faiss
+!data/resumes/Sample_*.pdf
+
+!data/faiss_jobs_gemini/index.pkl
+!data/faiss_career_kb/index.pkl
