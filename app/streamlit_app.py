@@ -1,4 +1,6 @@
 import sys
+import html
+import re
 import tempfile
 from pathlib import Path
 
@@ -16,6 +18,119 @@ from src.generate.cv_suggestions import (
 from src.safety.guardrails import check_input, check_output
 
 st.set_page_config(page_title="SmartHire GenAI", layout="wide")
+
+st.markdown(
+    """
+<style>
+/* ---- Sidebar width ---- */
+[data-testid="stSidebar"] {
+    min-width: 340px;
+    width: 340px;
+}
+
+/* ---- Top spacing ---- */
+[data-testid="stSidebarUserContent"] {
+    padding-top: 3rem;
+    padding-left: 0.8rem;
+}
+
+/* ---- Title: "SmartHire GenAI" ---- */
+[data-testid="stSidebar"] h1 {
+    font-size: 2.4rem;
+    line-height: 1.25;
+    margin-bottom: 0.4rem;
+}
+
+/* ---- Caption: "Resume matching & AI career mentor" ---- */
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+}
+
+/* ---- "Go to" label ---- */
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+}
+
+/* ---- Menu items ---- */
+[data-testid="stSidebar"] div[role="radiogroup"] {
+    gap: 1.3rem;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] label p {
+    font-size: 1.35rem;
+    line-height: 1.6;
+}
+
+/* ---- Bigger radio circles ---- */
+[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child {
+    transform: scale(1.3);
+    margin-right: 0.6rem;
+}
+
+/* ---- All main buttons (Parse resume, Find jobs, Get suggestions...) ---- */
+.stButton > button {
+    background-color: #6B7A2F;
+    color: #FAF3E0;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.6rem;
+    font-weight: 600;
+}
+.stButton > button p {
+    color: #FAF3E0;
+    font-size: 1.05rem;
+}
+.stButton > button:hover {
+    background-color: #3F4A1C;
+    color: #FAF3E0;
+}
+
+/* ---- File uploader "Upload" button ---- */
+[data-testid="stFileUploaderDropzone"] button[data-testid="stBaseButton-secondary"] {
+    background-color: #3F4A1C;
+    color: #FAF3E0;
+    border: none;
+    border-radius: 8px;
+}
+[data-testid="stFileUploaderDropzone"] button[data-testid="stBaseButton-secondary"]:hover {
+    background-color: #6B7A2F;
+    color: #FAF3E0;
+}
+
+/* ---- Slider label ---- */
+[data-testid="stSlider"] label p {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+}
+
+/* ---- Job cards (expander) ---- */
+[data-testid="stExpander"] summary p {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+/* ---- Skill chips ---- */
+.skill-chip {
+    display: inline-block;
+    background-color: #3F4A1C;
+    color: #F5EFD8;
+    padding: 0.3rem 0.85rem;
+    margin: 0.25rem 0.4rem 0.25rem 0;
+    border-radius: 999px;
+    font-size: 0.95rem;
+}
+
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 BLOCK_WORDS = ("unsafe", "injection", "off_topic")
 
@@ -41,7 +156,7 @@ def save_upload(uploaded) -> str:
 
 def need_resume() -> bool:
     if "resume_path" not in st.session_state:
-        st.info("First 'Upload CV' page-la oru resume upload pannu.")
+        st.info("Please upload your resume on the Upload CV page first.")
         return False
     return True
 
@@ -49,15 +164,15 @@ def need_resume() -> bool:
 # ---------- pages ----------
 def page_upload():
     st.header("Upload CV")
-    uploaded = st.file_uploader("PDF or DOCX resume", type=["pdf", "docx"])
+    uploaded = st.file_uploader("Upload your resume (PDF or DOCX)", type=["pdf", "docx"])
     if uploaded and st.button("Parse resume"):
-        with st.spinner("Resume padichitu irukken..."):
+        with st.spinner("Reading your resume..."):
             path = save_upload(uploaded)
             profile = adapters.parse(path)
         st.session_state.resume_path = path
         st.session_state.profile = profile
         st.session_state.pop("jobs", None)
-        st.success("Parse aagiduchu.")
+        st.success("Resume parsed successfully.")
 
     profile = st.session_state.get("profile")
     if profile:
@@ -71,22 +186,66 @@ def page_upload():
         with st.expander("Full parsed profile (JSON)"):
             st.json(data)
 
+    
+JOB_KEYS = ("title", "company", "location", "skills", "score")
+
+
+def parse_job_text(text: str) -> dict:
+    """Splits 'title: X company: Y location: Z skills: ... score: 0.4' into fields."""
+    pattern = r"(title|company|location|skills|score):\s*(.*?)(?=\s+(?:title|company|location|skills|score):|$)"
+    return {k: v.strip() for k, v in re.findall(pattern, text, flags=re.S)}
+
+def diversify(jobs: list[dict]) -> list[dict]:
+    """Keep only the best-ranked job for each title + company + location."""
+    seen, unique = set(), []
+    for job in jobs:
+        info = parse_job_text(job["text"])
+        key = (info.get("title"), info.get("company"), info.get("location"))
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(job)
+    return unique
+
 
 def page_jobs():
     st.header("Matched Jobs")
     if not need_resume():
         return
-    k = st.slider("How many jobs?", 3, 10, 5)
+
+    k = st.slider("Number of job matches to display", 3, 10, 5)
+
     if st.button("Find matching jobs"):
-        with st.spinner("Semantic search nadakkudhu..."):
-            st.session_state.jobs = adapters.match_jobs(
-                st.session_state.resume_path, k
-            )
-    for i, job in enumerate(st.session_state.get("jobs", []), start=1):
-        with st.expander(f"{i}. {job['title']}"):
-            st.write(job["text"])
+        with st.spinner("Finding the best job matches for your profile..."):
+            st.session_state.jobs = diversify(
+                adapters.match_jobs(st.session_state.resume_path, k * 6)
+            )[:k]
 
+    jobs = st.session_state.get("jobs", [])
+    for i, job in enumerate(jobs, start=1):
+        info = parse_job_text(job["text"])
+        title = info.get("title") or job["title"]
+        company = info.get("company", "")
+        label = f"{i}. {title}" + (f"  |  {company}" if company else "")
 
+        with st.expander(label):
+            if not info:
+                st.write(job["text"])
+                continue
+
+            c1, c2 = st.columns(2)
+            c1.markdown(f"**Company**  \n{info.get('company', '-')}")
+            c2.markdown(f"**Location**  \n{info.get('location', '-')}")
+
+            skills = [s.strip() for s in info.get("skills", "").split(",") if s.strip()]
+            if skills:
+                st.markdown("**Required skills**")
+                chips = "".join(
+                    f'<span class="skill-chip">{html.escape(s)}</span>' for s in skills
+                )
+                st.markdown(chips, unsafe_allow_html=True)
+
+           
 def page_cv():
     st.header("CV Suggestions")
     if not need_resume():
@@ -99,22 +258,22 @@ def page_cv():
     if (do_suggest or do_rewrite) and role.strip():
         ok, msg = guard(role)
         if not ok:
-            st.error(f"Indha input accept panna mudiyaadhu. ({msg})")
+            st.error(f"This request cannot be processed. ({msg})")
             return
         resume_text = read_resume_text(st.session_state.resume_path)
         job_text = find_job_text(role)
         if do_suggest:
-            with st.spinner("Suggestions ready aagudhu..."):
+            with st.spinner("Generating CV suggestions..."):
                 text, flags = check_output(
                     suggest_improvements(resume_text, job_text)
                 )
             st.session_state.suggestions = text
             st.session_state.flags = flags
         if do_rewrite:
-            with st.spinner("Resume rewrite aagudhu..."):
+            with st.spinner("Rewriting your resume for the target role..."):
                 st.session_state.rewrite = rewrite_resume(resume_text, job_text)
     elif (do_suggest or do_rewrite):
-        st.warning("Target role type pannu.")
+        st.warning("Please enter a target role.")
 
     if st.session_state.get("suggestions"):
         st.subheader("Suggestions")
@@ -140,17 +299,17 @@ def page_mentor():
         with st.chat_message(role):
             st.write(text)
 
-    q = st.chat_input("Career question kelu...")
+    q = st.chat_input("Ask a career question...")
     if q:
         st.session_state.chat.append(("user", q))
         with st.chat_message("user"):
             st.write(q)
         ok, msg = guard(q)
         if ok:
-            with st.spinner("Notes-la thedikitu irukken..."):
+            with st.spinner("	Searching career notes..."):
                 answer = adapters.mentor_answer(q)
         else:
-            answer = "Naan career-related questions-ku mattum dhaan help panna mudiyum."
+            answer = "I can only help with career-related questions."
         st.session_state.chat.append(("assistant", answer))
         with st.chat_message("assistant"):
             st.write(answer)
