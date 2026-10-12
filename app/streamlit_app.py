@@ -127,6 +127,139 @@ st.markdown(
     font-size: 0.95rem;
 }
 
+/* ---- 1. Collapse (<<) button: always visible ---- */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapseButton"] button {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+[data-testid="stSidebarCollapseButton"] button {
+    background-color: rgba(245, 239, 216, 0.15);
+    color: #F5EFD8;
+    border-radius: 8px;
+}
+[data-testid="stSidebarCollapseButton"] button:hover {
+    background-color: rgba(245, 239, 216, 0.30);
+}
+
+/* ---- 2. Expand (>>) button: pinned inside the green strip ---- */
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapsedControl"] {
+    position: fixed !important;
+    top: 1rem !important;
+    left: 0.35rem !important;
+    z-index: 999999 !important;
+}
+[data-testid="stExpandSidebarButton"] button,
+[data-testid="stSidebarCollapsedControl"] button {
+    color: #F5EFD8 !important;
+    background-color: transparent !important;
+}
+[data-testid="stExpandSidebarButton"] svg,
+[data-testid="stSidebarCollapsedControl"] svg {
+    color: #F5EFD8 !important;
+    fill: #F5EFD8 !important;
+}
+
+/* ---- 3. Center the content when the sidebar is collapsed ---- */
+[data-testid="stAppViewContainer"]:has([data-testid="stSidebar"][aria-expanded="false"])
+    [data-testid="stMainBlockContainer"] {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ---- Hide "Press Enter to apply" hint ---- */
+[data-testid="InputInstructions"] {
+    display: none;
+}
+
+/* ---- Target role: label + input box ---- */
+[data-testid="stTextInput"] label p {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+[data-testid="stTextInput"] input {
+    font-size: 1.2rem;
+    padding: 0.9rem 1rem;
+    min-height: 3.2rem;
+}
+[data-testid="stTextInput"] input::placeholder {
+    font-size: 1.1rem;
+}
+
+/* ---- Buttons: show full text, no "..." ---- */
+.stButton > button {
+    white-space: nowrap;
+    width: auto;
+    min-width: max-content;
+}
+.stButton > button p {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* ---- Hide heading anchor link icons ---- */
+[data-testid="stHeaderActionElements"] {
+    display: none !important;
+}
+
+/* ---- Chat input: bigger text and box ---- */
+[data-testid="stChatInput"] textarea {
+    font-size: 1.2rem !important;
+    min-height: 3rem;
+    padding-top: 0.8rem;
+}
+[data-testid="stChatInput"] textarea::placeholder {
+    font-size: 1.15rem;
+}
+[data-testid="stChatInput"] > div {
+    background-color: #F0E6C8;
+    border: 1.5px solid #6B7A2F;
+    border-radius: 14px;
+}
+
+/* ---- Chat bubbles: base ---- */
+[data-testid="stChatMessage"] {
+    width: fit-content;
+    max-width: 78%;
+    padding: 1rem 1.3rem;
+    border-radius: 16px;
+    margin-bottom: 1rem;
+}
+[data-testid="stChatMessage"] p,
+[data-testid="stChatMessage"] li {
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+/* ---- Bot (left): sand bubble ---- */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+    background-color: #F0E6C8;
+    border: 1px solid #D9CC9E;
+    margin-right: auto;
+}
+[data-testid="stChatMessageAvatarAssistant"] {
+    background-color: #6B7A2F !important;
+}
+
+/* ---- User (right): dark olive bubble ---- */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+    background-color: #3F4A1C;
+    flex-direction: row-reverse;
+    margin-left: auto;
+}
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) p,
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) li,
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) strong {
+    color: #F5EFD8;
+}
+[data-testid="stChatMessageAvatarUser"] {
+    background-color: #A89B4A !important;
+}
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -250,50 +383,78 @@ def page_cv():
     st.header("CV Suggestions")
     if not need_resume():
         return
+
     role = st.text_input("Target role", placeholder="e.g. Data Analyst")
-    col1, col2 = st.columns(2)
+    col1, col2, _ = st.columns([1, 1, 3])
     do_suggest = col1.button("Get suggestions")
     do_rewrite = col2.button("Rewrite my resume")
 
-    if (do_suggest or do_rewrite) and role.strip():
-        ok, msg = guard(role)
-        if not ok:
-            st.error(f"This request cannot be processed. ({msg})")
-            return
-        resume_text = read_resume_text(st.session_state.resume_path)
-        job_text = find_job_text(role)
-        if do_suggest:
-            with st.spinner("Generating CV suggestions..."):
-                text, flags = check_output(
-                    suggest_improvements(resume_text, job_text)
-                )
-            st.session_state.suggestions = text
-            st.session_state.flags = flags
-        if do_rewrite:
-            with st.spinner("Rewriting your resume for the target role..."):
-                st.session_state.rewrite = rewrite_resume(resume_text, job_text)
-    elif (do_suggest or do_rewrite):
-        st.warning("Please enter a target role.")
+    if do_suggest or do_rewrite:
+        if not role.strip():
+            st.warning("Please enter a target role.")
+        else:
+            ok, msg = guard(role)
+            if not ok:
+                st.error(f"This request cannot be processed. ({msg})")
+                return
 
-    if st.session_state.get("suggestions"):
+            path = st.session_state.resume_path
+            key = (path, role.strip().lower())
+            resume_text = read_resume_text(path)
+            job_text = find_job_text(role)
+
+            if do_suggest:
+                if st.session_state.get("suggest_key") != key:
+                    with st.spinner("Generating CV suggestions..."):
+                        text, flags = check_output(
+                            suggest_improvements(resume_text, job_text)
+                        )
+                    st.session_state.suggestions = text
+                    st.session_state.flags = flags
+                    st.session_state.suggest_key = key
+                st.session_state.cv_view = "suggestions"
+            else:
+                if st.session_state.get("rewrite_key") != key:
+                    with st.spinner("Rewriting your resume for the target role..."):
+                        st.session_state.rewrite = rewrite_resume(resume_text, job_text)
+                    st.session_state.rewrite_key = key
+                st.session_state.cv_view = "rewrite"
+
+    view = st.session_state.get("cv_view")
+
+    if view == "suggestions" and st.session_state.get("suggestions"):
         st.subheader("Suggestions")
         st.markdown(st.session_state.suggestions)
         if st.session_state.get("flags"):
             st.warning(f"Output check flags: {st.session_state.flags}")
 
-    if st.session_state.get("rewrite"):
+    elif view == "rewrite" and st.session_state.get("rewrite"):
         st.subheader("Rewritten resume")
         rw = st.session_state.rewrite
         if isinstance(rw, dict):
-            for key, val in rw.items():
-                st.markdown(f"**{key}**")
+            hidden = {"report", "fixed", "warnings"}
+            for name, val in rw.items():
+                if name in hidden:
+                    continue
+                st.markdown(f"**{name.replace('_', ' ').title()}**")
                 st.write(val)
+
+            report = rw.get("report")
+            report = report if isinstance(report, dict) else {}
+            if rw.get("warnings") or report.get("new_skills") or report.get("new_numbers"):
+                st.warning(
+                    "Please review: this rewrite may include skills or numbers "
+                    "that are not in your original resume."
+                )
+            else:
+                st.caption("Verified: no new skills or numbers were added to your resume.")
         else:
             st.write(rw)
-
+ 
 
 def page_mentor():
     st.header("AI Career Mentor")
+    st.caption("Ask about roles, skills, projects and career paths.")
     st.session_state.setdefault("chat", [])
     for role, text in st.session_state.chat:
         with st.chat_message(role):
