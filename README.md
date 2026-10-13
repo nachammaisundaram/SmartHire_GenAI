@@ -42,8 +42,7 @@ SmartHire_GenAI/
 │   ├── mentor/              # RAG mentor
 │   └── safety/              # guardrails
 ├── data/                    # jobs, sample resumes, career notes, FAISS indexes
-├── notebooks/               # my experiments
-├── reports/            # evaluation reports
+├── reports/                 # evaluation reports
 ├── scripts/                 # small helper scripts
 ├── tests/                   # quick checks
 ├── .streamlit/config.toml   # theme colours
@@ -101,6 +100,11 @@ I did not want to just demo it, so I tested it. The reports are in `reports/` an
 - The mentor only knows what is in my career notes, so it will not answer everything.
 - Guardrails help, but they are not a perfect safety system.
 - The free Gemini API has limits, so very heavy use can slow down or fail.
+
+## Related work
+
+The small practice projects I built during the training sessions are in a separate 
+repo: https://github.com/nachammaisundaram/GEN-AI
 
 ## About me
 
