@@ -4,7 +4,7 @@ SmartHire GenAI is a small career portal I built as my Generative AI capstone pr
 
 I built this on my own over about three weeks, as part of my Gen AI internship training.
 
-Live demo: _I will add the link here once it is deployed_
+Live demo: https://smarthiregenai-o2aln6d6ehvvmpnazszzas.streamlit.app/
 
 ## What it does
 
@@ -43,7 +43,7 @@ SmartHire_GenAI/
 │   └── safety/              # guardrails
 ├── data/                    # jobs, sample resumes, career notes, FAISS indexes
 ├── notebooks/               # my experiments
-├── eval_results/            # evaluation reports
+├── reports/            # evaluation reports
 ├── scripts/                 # small helper scripts
 ├── tests/                   # quick checks
 ├── .streamlit/config.toml   # theme colours
@@ -87,7 +87,7 @@ python -m tests.test_guard
 
 ## Evaluation
 
-I did not want to just demo it, so I tested it. The reports are in `eval_results/` and cover:
+I did not want to just demo it, so I tested it. The reports are in `reports/` and cover:
 
 - whether the top jobs are actually relevant for sample profiles
 - how good the mentor's answers are (correct, grounded in the notes, helpful)

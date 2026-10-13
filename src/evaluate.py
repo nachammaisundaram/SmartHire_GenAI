@@ -12,7 +12,7 @@ from src.llm_util import get_llm, safe_invoke
 from src.generate.prompts import PROMPTS
 
 PAUSE = 4
-OUT_DIR = "eval_results"
+OUT_DIR = "reports"
 
 # ------------------------------------------------------------------ test sets (EDIT these to your own)
 # (query, keyword that must appear in a top-k hit)
