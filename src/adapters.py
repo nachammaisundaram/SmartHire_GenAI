@@ -67,9 +67,12 @@ def kb_search(query: str, k: int = 3) -> list[str]:
     return [_text_of(h) for h in list(hits)[:k]]
 
 
-def mentor_answer(question: str) -> str:
-    """Single-turn call: empty history each time, so evaluation answers don't affect each other."""
-    res = cm.ask(_get_db(), question, [])
+def mentor_answer(question: str, history=None) -> str:
+    """history=None -> single turn (evaluation uses this).
+    Pass a list to keep chat memory; ask() updates that list in place."""
+    if history is None:
+        history = []
+    res = cm.ask(_get_db(), question, history)
     if isinstance(res, dict):
         for key in ("answer", "response", "text", "output"):
             if key in res:

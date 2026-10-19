@@ -456,25 +456,39 @@ def page_mentor():
     st.header("AI Career Mentor")
     st.caption("Ask about roles, skills, projects and career paths.")
     st.session_state.setdefault("chat", [])
+    st.session_state.setdefault("mentor_history", [])
     for role, text in st.session_state.chat:
         with st.chat_message(role):
             st.write(text)
 
     q = st.chat_input("Ask a career question...")
     if q:
+        previous_q = next(
+            (t for r, t in reversed(st.session_state.chat) if r == "user"), ""
+        )
         st.session_state.chat.append(("user", q))
         with st.chat_message("user"):
             st.write(q)
+
         ok, msg = guard(q)
+        if not ok and previous_q:
+            # a short follow-up ("How long will that take?") can look off-topic
+            # on its own, so re-check it together with the previous question.
+            flag = msg.lower().replace(" ", "_").replace("-", "_")
+            only_off_topic = (
+                "off_topic" in flag and "injection" not in flag and "unsafe" not in flag
+            )
+            if only_off_topic:
+                ok, msg = guard(f"{previous_q} {q}")
+
         if ok:
-            with st.spinner("	Searching career notes..."):
-                answer = adapters.mentor_answer(q)
+            with st.spinner("Searching career notes..."):
+                answer = adapters.mentor_answer(q, st.session_state.mentor_history)
         else:
             answer = "I can only help with career-related questions."
         st.session_state.chat.append(("assistant", answer))
         with st.chat_message("assistant"):
             st.write(answer)
-
 
 # ---------- layout ----------
 PAGES = {
